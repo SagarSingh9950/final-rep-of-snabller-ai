@@ -1,149 +1,119 @@
-# Friday-pAI — Personal AI Desktop Assistant
+Friday-pAI 
 
-Friday-pAI is an Electron desktop assistant with a React/Vite interface, an NVIDIA Nemotron-backed chat flow, Tavily web search, local tools, persistent memory/goals, and reusable workflow definitions.
+A Personal AI Desktop Assistant
 
-## Requirements
+Friday-pAI is a personal AI assistant I'm building to make everyday computer tasks easier. The idea is simple: instead of having an AI that only answers questions, I want to build something that can understand what I need, use different tools, remember useful information, and complete tasks through multiple steps.
 
-- Node.js 20 or newer (Node.js 22 LTS recommended)
-- npm
-- API credentials configured locally for the integrations you use
-- Node.js 22.5 or newer to run the Express backend, which uses Node's built-in SQLite module
+The project is built with Electron and Node.js, with NVIDIA Nemotron handling AI interactions and Tavily helping with web research.
 
-## Local setup
+I'm continuously working on improving its capabilities and making it more useful as a personal desktop assistant.
 
-1. Install dependencies:
+What can it do?
 
-   ```bash
-   npm install
-   ```
+AI Chat
 
-   This installs dependencies for both the desktop app and the backend API.
+- Chat naturally with the assistant.
+- Uses NVIDIA Nemotron API for AI-powered responses.
+- Can decide when to use available tools to handle a request.
 
-2. Create a local `.env` file in the project root. Keep it private and never commit it. Add only the keys you actually use:
+Web Search
 
-   ```env
-   NVIDIA_API_KEY=your_nvidia_api_key
-   TAVILY_API_KEY=your_tavily_api_key
-   ```
+- Uses Tavily API to search the web.
+- Helps gather information for research and other tasks.
 
-3. Start the Vite renderer in one terminal:
+Built-in Tools
 
-   ```bash
-   npm run dev
-   ```
+Friday currently has integrations for:
 
-4. Start Electron in another terminal:
+- Calculator
+- Date and time
+- System information
+- File management
+- Web search
 
-   ```bash
-   npm run electron
-   ```
+Memory
 
-The Electron main process loads its renderer from `http://localhost:5173`, so keep the Vite server running while testing the desktop app.
+One of the things I wanted to add was the ability for Friday to remember useful information instead of treating every conversation as completely new.
 
-## Snabbler dashboard and REST backend
+The memory system stores useful context and makes it available for future interactions.
 
-The Snabbler dashboard in `index.html` keeps its existing markup, design, theme, and navigation. It loads `src/dashboard-api.js` as its API controller; chat, memory, workflow, and history actions use the local Express API. SQLite stores dashboard memories, chat messages, workflow runs/events, goals, and tasks.
+Workflow Automation
 
-Start the backend from the project root in one terminal:
+This is one of the main parts of the project.
 
-```bash
-node server.js
-```
+I wanted Friday to handle tasks that require more than one action. For this, I've developed a workflow engine that supports:
 
-Or use `npm run backend`. Start the frontend in a second terminal:
+- Multi-step task execution
+- Dependencies between steps
+- Workflow status tracking
+- Retry handling
+- Recovery of interrupted tasks
+- Approval before protected operations
+- Saving workflow history and task events
 
-```bash
-npm run dev
-```
+Some Workflows
 
-The backend binds only to `127.0.0.1`. It allows the Vite development origins on ports 5173/4173 and any additional comma-separated origins in `FRONTEND_URL`. It is intended for a single local user; the application does not currently implement login or multi-user accounts.
+I've created several workflow definitions to explore what Friday can do:
 
-The default SQLite file is `backend/data/snabbler.sqlite`. On its first initialization, the backend imports repository-local `memory/memory.json`, `data/workflow-runs.json`, `data/task-events.json`, and `data/goals/goals.json` if present. It leaves the source files untouched and will not import them again after their migration markers are recorded. Electron's separate per-user `userData` JSON files remain managed by Electron and are not changed by the REST backend.
+Workflow| What it does
+Calculation Explainer| Calculates an expression, verifies the result, and explains it.
+Daily Briefing| Searches requested topics and prepares a summary.
+Project Assistant| Inspects project files and suggests improvements.
+Research & Study| Researches a topic and organizes study notes.
+System Check| Collects and summarizes system information.
+File Organizer| Inspects files and prepares an organization plan.
 
-Copy the placeholder values from `.env.example` and `backend/.env.example` as needed. Set `NVIDIA_API_KEY` in the root `.env` or `backend/.env` for server-side chat and AI workflow steps. If both files define it, the root `.env` takes precedence. Restart the backend after changing the key. Keep the key out of frontend variables; only `VITE_API_BASE_URL` is read by the browser. `DATABASE_PATH` can optionally point to a different SQLite file. The database path and provider keys are never returned by API responses.
+Tech Stack
 
-Available endpoints:
+- JavaScript
+- Node.js
+- Electron
+- NVIDIA Nemotron API
+- Tavily API
+- JSON
 
-- `GET /api/health`
-- `POST /api/chat`, `GET /api/chat/history`, `GET /api/conversations`, `GET /api/conversations/:id/messages`, and `DELETE /api/conversations/:id`
-- `GET /api/memories`, `POST /api/memories`, `PUT /api/memories/:id`, `DELETE /api/memories/:id`
-- `GET /api/goals`, `POST /api/goals`, `GET /api/goals/:id`, `PUT /api/goals/:id`, `DELETE /api/goals/:id`
-- `POST /api/goals/:id/tasks`, `PATCH /api/goals/:id/tasks/:taskId`, `DELETE /api/goals/:id/tasks/:taskId`
-- `GET /api/daily-plan`
-- `GET /api/workflows`
-- `POST /api/project-tools/preview` and `POST /api/project-tools/execute` for approved local project folder operations
-- `POST /api/workflows/:id/runs`
-- `GET /api/workflow-runs`, `GET /api/workflow-runs/:id`, `GET /api/workflow-runs/:id/events`
-- `POST /api/workflow-runs/:id/approval`, `/resume`, and `/cancel`; `DELETE /api/workflow-runs/:id`
+Running Locally
 
-Chat calls the existing NVIDIA client and tool adapter from the backend. Conversations are stored separately, can be selected from the Jarvis Core right-side panel, and continue with their own context; existing chat messages are migrated into one conversation. Requests that need provider credentials fail explicitly when the key is not configured. Memory rejects recognizable credential patterns. Workflow file changes remain behind an approval step and use the project's secure file-operation helpers.
+1. Clone the repository
 
-The React/Electron renderer in `src/App.jsx` is a separate existing app surface and is not mounted by the current Snabbler `index.html`; its Electron IPC and per-user JSON persistence remain unchanged.
+git clone https://github.com/Maulik05Kalyan/Friday-pAI.git
 
-## Workflow engine
+2. Open the project directory
 
-Workflow definitions live in `workflows/*.json`. The desktop UI provides workflow discovery, typed input forms, execution status, per-step results/errors, approval controls, and persistent run history.
+cd Friday-pAI
 
-The engine and task recorder can be checked without calling external APIs:
+3. Install dependencies
 
-```bash
-npm test
-npm run check:main
-```
+npm install
 
-Build and lint the renderer/project with:
+4. Configure API keys
 
-```bash
-npm run build
-npm run lint
-```
+Create a ".env" file and add the API credentials required by the application. Check the source code for the exact environment-variable names.
 
-The shipped workflows use existing tools and/or the configured AI/search integrations. `file-organizer` now builds a move preview and applies the proposed moves only after approval. It stays inside the selected project directory, skips common sensitive files and dependency/build folders, rejects symbolic links and path traversal, refuses overwrites, and attempts rollback if a move batch fails. `project-assistant` saves a Markdown review proposal under `.friday-proposals/` only after approval; it does not edit original source files.
 
-## Privacy and safety
 
-- Keep `.env` and API keys out of source control.
-- Workflow project inspection avoids common sensitive files and redacts common key patterns.
-- Approval-required workflow steps show their predecessor output as a preview and must be approved explicitly.
-- File operations are confined to the chosen project directory; symbolic links, sensitive paths, path traversal and overwrites are rejected.
-- Workflow runs, task events, memory, goals, and saved notes are stored locally under Electron's per-user `userData` directory in the desktop app. Existing project-local JSON data is migrated only when the destination does not already exist.
-- The Memory screen lets you add, edit and delete facts. Recognizable credential patterns are rejected from saved memory.
-- Tests use temporary directories so they do not erase your real run history, goals, or memory.
+5. Start the application
 
-## Personal AI track direction
+Check "package.json" for the available start or development command.
 
-The project is being developed toward a private, user-controlled assistant with persistent memory, reusable workflows, and explicit access to tools. NVIDIA Nemotron is used through the existing NVIDIA API integration. Nebius Token Factory/AI Cloud usage and final hackathon packaging must be verified separately before submission; having a key alone is not proof of a successful inference integration.
+What's Next?
 
-## Persistent data and verification
+There are still plenty of things I want to improve.
 
-The desktop app stores personal memory and workflow run/event history in Electron's per-user `userData` directory. On first launch, existing project-local JSON data is copied only when the destination does not already exist. Workflow memory retrieval uses local BM25 ranking plus sparse word/character vectors, concept expansion, category relevance, and recency. It works offline without sending saved memories to an embedding service, but it is not a neural dense-embedding model. Shipped workflows have deterministic checks for configured output conditions. File-changing steps remain behind explicit approval; file moves and generated artifacts use per-run idempotency protections where possible. A workflow can be cancelled between tool steps, although an already-running external call may finish before cancellation takes effect.
+Some of my goals for Friday are:
 
-Run automated checks with:
+- Better memory and context retrieval.
+- More reliable workflow execution.
+- Ability to work with projects across different folders.
+- More advanced file operations with user approval.
+- Browser automation.
+- Better task planning and result verification.
+- Integration with additional AI model providers.
 
-```bash
-npm test
-npm run check:main
-npm run lint
-npm run build
-```
+Why I Started This Project
 
-The memory test launches a separate Node process to verify disk persistence. After installing dependencies on Windows, also launch the Electron app and restart it manually to validate the complete packaged runtime and live API integrations.
+I started Friday-pAI because I wanted to build my own personal AI assistant rather than just use another chatbot.
 
-## Verification and smoke tests
+I wanted to understand how AI models, tools, memory, and automation can work together in a single application.
 
-On Windows PowerShell, from this project directory, run:
-
-```powershell
-Set-ExecutionPolicy -Scope Process Bypass
-.\verify-windows.ps1
-```
-
-This performs a clean `npm ci`, automated workflow/memory/history/security/goals/provider tests, main-process syntax checks, ESLint, Vite production build, and optional live API smoke tests. The API smoke test reads `NVIDIA_API_KEY` and `TAVILY_API_KEY` from the process environment or a local `.env` file, never prints the keys, and skips any provider without a configured key. Do not commit `.env`.
-
-To run only the API checks after configuring `.env`:
-
-```powershell
-npm run test:api-smoke
-```
-
-The automated persistence tests launch a separate Node process to confirm that memory and workflow history survive process restarts. Also perform a full GUI restart check on Windows: run a workflow, close Friday-pAI completely, relaunch it, and verify Memory and workflow history are still visible. A process-level test cannot substitute for validating the packaged Electron GUI on the target machine.
+It's an ongoing project, and I'm learning and improving it as I build.
